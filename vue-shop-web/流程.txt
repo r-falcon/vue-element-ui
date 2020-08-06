@@ -1,0 +1,634 @@
+**用户管理模块**
+**权限管理模块**
+**分类管理模块**
+**参数管理模块**
+
+？？？
+  1.iconfont 
+  2.slot
+
+
+
+一、基本业务概述
+  一般提供了pc端、pc后台管理、移动app、移动web、微信小程序等多种终端访问方式
+  1.开发模式：前后端分离
+      前端项目基于Vue技术栈的SPA项目
+  2.技术选型
+    (1)前端项目技术栈
+      Vue 
+      Vue-router
+      Element-UI
+      Axios
+      Echarts
+    (2)后端项目技术栈
+      Node.js
+      Express
+      JWt
+      Mysql
+      Sequelize
+
+二、项目初始化
+  1.前端项目初始化步骤
+      (1)安装Vue脚手架
+        只安装一次，以后都可以使用
+      (2)通过Vue脚手架创建项目（推荐使用gui【可视化面板】创建项目）
+        win+R --> "cmd" --> 打开命令提示符
+        输入vue ui --> 打开Vue项目管理器
+        点击创建 --> 打开要创建项目的位置 --> 点击"在此创建新项目"
+        输入项目名（只能英文） --> 初始化git远程仓库"init project" --> 下一步
+        进入预设 --> 点击"手动" --> 下一步
+        进入功能 --> 打开/安装Babel,Router,Linter/Formatter,使用配置文件 --> 下一步
+        进入配置 --> use history mode for router(关闭),pick a linter/formatter config(ESLint + Standard config),pick additional lint featuers(Lint on save) --> 下一步
+        保存为新预设（可选）--> 创建项目
+      (3)配置Vue路由
+      (4)配置Element-UI组件库
+        项目配置好之后，点击插件 --> 右上角"添加插件"
+        搜索"vue-cli-plugin-element" --> 选中，右下角点击安装
+        安装完成之后，进行相应的配置：fully import 改为 import on demand;语言模式默认中文就ok --> "完成安装"
+      (5)配置axios库
+        点击"依赖" --> 点击"安装依赖" 
+        搜索"axios" --> 第一个，"运行依赖"栏下面选中 --> 安装
+      (6)初始化git远程仓库
+        码云右边头像旁边，点击“+” --> 新建仓库
+        填写仓库名称，把最下面的“使用readme文件初始化这个仓库”选项对勾去掉 --> 创建
+        跳转界面 --> 执行界面中的“git全局设置”（win+R 复制执行即可）
+        然后在找到项目的当前路径，在项目路径下，打开终端/git
+          先"git status"检查一下状态
+          有需要提交的，"git add ."把所有文件都提交到暂存区
+          接着执行`git commit -m "随便写写"`
+          再次检查状态 "git status" 提示无分支，工作目录干净，则成功
+        然后执行将本地项目放到码云上
+      (7)将本地项目托管到github或码云中
+        例子码云：
+          输入"gitee.com" --> 注册码云账户
+          进行设置 --> 右边个人中心 --> 设置 --> 选择SSH公钥
+          打开链接公钥的“怎艳生成公钥” --> 打开链接“公钥管理” --> 打开链接“生成/添加SSH公钥”
+          按照网上的说明操作添加SSH
+        放码云上：
+          按照页面提示，git/终端（切换到当前目录）中执行"git remote add origin https://gitee.com/rfalcon/vue_shop.git"
+          然后在执行："git push -u origin master" --> 成功上传码云
+    2.后台项目的环境安装配置
+      (1)安装MySQL数据库
+      (2)安装Node.js环境
+      (3)配置项目相关信息
+        下载一个phpstudy，停用Apache，只启动MySQL，导入.sql文件
+        MySQL管理器 --> mysql导入导出 --> mysql密码（root默认）、选择要还原的文件（mydb.sql)、还原到数据库名（mydb，保持一致）
+        黑框关闭，导入成功。验证：MySQL工具 --> 打开数据库目录 --> mydb文件夹下有对应的文件，则导入成功
+
+        安装依赖：
+          打开终端，切换到"F:\Vue-demo\vueShop-api-server"这一目录下，"npm install"命令回车
+          然后 输入"node .\app.js",让api接口项目跑起来
+      (4)启动项目
+      (5)使用Postman测试后台项目接口是否正常（**测试有误**）
+        安装postman，打开面板，进行后台项目的接口测试
+        右侧栏：post + api.md中的基准地址login
+        参数在body中进行设置，点击 --> 选择x-www-form.urlencoded -->填入对应的键值对（username[zs/admin]、password[123456]）
+        点击发送，下栏中会显示相应的状态
+
+三、登录/退出功能
+  1.登录业务流程
+    (1)在登录页面输入用户名和密码
+    (2)调用后台接口进行验证
+    (3)通过验证之后，根据后台的相应状态跳转到项目主页
+  2.登录业务的相关技术点
+  【注】前端与服务器之间不存在跨域问题，用cookie+session;前端与服务器之间存在跨域问题，用token
+    (1)http是无状态的
+    (2)通过cookie在客户端记录状态
+    (3)通过session在服务器端记录状态
+    (4)通过token方式维持状态
+  token原理分析：（主要进行客户端与服务器端的身份校验）
+    客户端 --> 登录页面输入用户名和密码进行登录 --> 服务器
+    服务器 --> 服务器验证通过之后生成该用户的token并返回 --> 客户端
+    客户端 --> 存储token值 --> 客户端
+    客户端 --> 后续所有的请求都携带该token发送的请求 --> 服务器 
+    服务器 --> 验证token是否通过 --> 服务器
+  3.登录功能的实现
+    (1)登录页面的布局
+      通过Element-UI组件实现布局
+        el-form 
+        el-form-item
+        el-input
+        el-button
+        字体图标
+      用VS code打开项目，打开vue_shop目录下的终端，然后检查一下工作区是否干净"git status"
+      创建一个分支 "git checkout -b login"
+      查看所有分支 "git branch"
+      查看项目运行效果：win+R ("vue ui")，打开可视化面板，在“任务”中选“serve”点击“运行”按钮。编译成功之后，点击启动app，此时项目已经运行了起来
+      查看main.js（看项目文档）
+      修改App.vue（分为结构[template]、行为[script]、样式[style]三个方面） --> 遇到报错，关闭Eslint语法检查后重试（**关闭Eslint的enable选项，还是报错**）
+      查看并修改router的index.js文件，将const router = new VueRouter({})里面的方法删掉
+
+      在components文件夹下建立一个登陆组件（login.vue),这是一个单页组件，由结构、行为、样式三部分组成，写相应的代码
+      找到router的index.js 先导入登陆组件,然后新增一个路由规则，然后在app.vue 根组件中放一个路由占位符（此操作一定要注意路径的问题）
+      然后执行后，在后面加上login试一下，会出现“登陆组件”页面
+      index.js中添加一个重定向路由规则
+
+      Login.vue中填写代码给页面加背景色 --> 运行后报错，安装less-loader依赖（注意安装到“开发依赖”环境下），然后同一个环境下安装less
+      安装完成，切换到项目刷新，若发现不能生效 --> 重新启动项目
+      发现背景色有白色空隙，在assets文件夹下面建立一个css文件夹，然后建立一个global.css的全局样式表
+      设置好后，在入口文件main.js中导入全局样式表
+      导入成功之后，在Login.vue中设置一个登陆框
+
+      绘制登陆的头像部分。打开Login.vue进行编辑
+      表单部分，引入Element组件中的代码，因为element是按需导入的，所以找到plugins下面的element.js进行修改
+      需要注意的是，在组件进行局部引用的时候，会出现样式出不来，或者不是引用的样式，因为需要在main.js中引入.css文件后样式才会生效
+
+      绘制带有icon的输入框，在Login.vue中进行修改
+      寻找图标的时候发现element中没有涉及到的图标，去阿里图标库（**怎样去批量下载阿里的素材并引入项目呢**）
+      引入阿里图标，需在入口文件main.js中导入样式,然后对应的地方iconfont+相应图标名引入图标
+      "<el-input prefix-icon="iconfont icon-user"></el-input>"
+
+      实现表单的数据绑定（v-model），Login.vue中修改
+      数据对象在data中进行定义之后，对应的地方进行数据的双向绑定
+      密码隐藏，input中加type=password
+
+      实现表单的数据验证，Login.vue中进行修改
+      首先给form绑定一个rules，然后在data中定义rules
+      然后通过prop进行说明是对谁的验证，写到对应的地方  
+
+      实现表单的重置功能Login.vue
+      先要拿到表单的数据对象,在登录表单项el-form设置ref
+      重置按钮设置一个点击事件,在data中定义这个方法,在element中查找这个重置方法
+
+      实现表单登录前的预校验（和实现表单的重置一样的步骤）Login.vue
+      登录按钮设置一个点击事件，data的methods中定义这个方法，回调函数返回对应的值    
+
+      配置axios发起登录请求
+      在main.js中对axios包进行全局的配置,然后返回Login.vue中填写发起请求的代码
+      然后通过phpstudy启动MySQL数据库，然后进入“vueShop-api-server”路径在命令中运行"node .\app.js"
+      **运行返回值为promise，可以通过“await”简化操作，然后用async变成异步方法**（node知识）
+      **解构出来data属性，命名为res**
+
+      **配置message全局弹框组件
+      在element.js中导入Message组件
+      然后去Login.vue中进行修改变为弹窗提示
+
+      完善登录之后的操作
+        1.将登录成功之后的token保存到客户端的sessionStorage中
+          项目中除了登录之外的其他api接口，必须在登录之后才能访问
+          token只能在当前网站打开期间生效，所以要保存在sessionStorage中
+        2.通过编程式导航跳转到后台主页，路由地址是/home
+      新建并填写home.vue中的内容
+      在router的index.js中导入Home.vue
+      (2)路由导航守卫控制访问权限
+        如果用户没有登录，但是直接通过URL访问特定的页面，需要重新导航到登录页面
+        为路由对象，添加beforeEach导航守卫
+        router.beforeEach((to,from,next)=>{
+        //to 将要访问的页面路径；from 从哪个路径跳转到当前页面；next 放行的函数
+        if(to.path == '/login') return next()
+        //从sessionStorage 中获取保存的token值
+        const tokenStr = window.sessionStorage.getItem('token')
+        //没有token，强制跳转到登录页
+        if(!tokenStr) return next('/login')
+        //有token，next直接放行
+        next()
+        })
+      对router下的index.js文件进行改造，添加挂载路由导航守卫的相应代码
+      （3）退出功能
+      基于token的方式实现退出，只需要销毁本地的token即可（后续的请求不会携带token，必须重新登录生成新的token才可以
+      //清空token
+      window.sessionStorage.clear()
+      //跳转到登录页
+      this.$router.push('/login')
+
+      处理Eslint中的语法警告（解决格式化工具和Eslint之间的冲突）
+      建立一个.prettierrc的文件：通过固定的格式移除分号并用单引号表示字符串
+      对于空格，打开.eslintrc.js，添加并设置对应的空格属性为0
+      对于报错，将错误粘贴到.eslintrc.js文件中，然后":0"禁用这项规则
+
+      优化element-ui组件中按需导入的语法格式
+      plugins-->element.js中是按需导入的代码
+
+      将本地的代码和码云中的代码同步的操作
+      ctrl+`  vs code 打开终端，左边“+”打开一个新的终端窗口
+      切换到“F:\Vue-demo\vue_shop”这一路径下
+      "git status"查看当前状态
+      "git add ."提交修改后的所有文件
+      "git status"再次查看状态
+      "git config --global user.email rfalcon@163.com"和"git config --global user.name rfalcon"告诉终端要传到哪个账户
+      "git commit -m "完成登录功能" 上传到云端
+      "git branch"查看当前分支
+      "git checkout master"切换分支
+      "git branch"查看分支已经切换
+      "git merge login"合并分支
+      "git push" 本地的推送到远程
+      发现云端只有一个分支，"git checkout login" 切换分支
+      "git branch"查看分支已经切换
+      "git push"推送到云端
+      "git push -u origin login" 将本地的分支推送到云端的login分支（发现云端多了一个login分支）
+
+四、主页布局
+  1.整体布局（先上下、后左右）
+    组件布局容器中找到合适的组件，复制过来加以使用
+    发现报错，需要在plugins的element.js中导入需要使用的组件
+    为header.aside.main加背景色
+    打开控制台，设置样式规范样式
+    header:左侧(logo + title) 右侧（"退出"按钮）
+  2.美化主页header区域：主要利用flex弹性添加一些样式
+  3.左侧菜单布局
+    去element中查找导航菜单-->选中自定义颜色所对应的菜单复制过来
+    去element.js 中导入需要的组件
+    改背景颜色，规范菜单模式
+  4.通过接口获取菜单数据
+    通过axios请求拦截添加token，保证拥有获取数据的权限
+    //axios请求拦截
+    axios.interceptors.request.use(config => {
+      //为请求头对象，添加token验证的Authorization字段
+      config.headers.Authorization = window.sessionStorage.getItem('token')
+      return config
+    })
+    找到main.js 设置一个拦截器
+    给header头部添加Authority属性
+  5.获取左侧菜单数据
+    打开home.vue，定义一个生命周期函数,获取左侧菜单所有的数据
+    通过双层for循环渲染左侧菜单，Home.vue 中添加
+    左侧菜单图标优化
+    unique opened-->每次只能打开一个菜单
+    左侧菜单的对齐"border-right:none"
+    实现左侧菜单的折叠与展开
+    通过动态绑定布尔值实现菜单的折叠与展开
+    通过collapse-transition取消动画效果
+    根据isCollapse值动态为侧边栏设定width
+  6.实现首页路由的重定向
+    现在components中新增一个welcome组件
+    在router的index.js中导入,并设置相应的路径
+    在home.vue中放一个路由站位符
+  7.实现左侧菜单路由链接（Home.vue）
+    开启路由模式" :router:true "
+    点击会跳转页面（ID值）
+    改造：把id改为path，自己给其路径加个斜线(字符串拼接)
+  
+  用户管理模块：
+  8.通过路由的形式展示用户列表组件
+    components中建一个user文件夹，user中建一个Users.vue
+    然后创建这个组件
+    在router的index.js中导入这个组件,并设置跳转路径
+  9.在sessionStorage中保存左侧菜单栏的激活状态
+    设置高亮.
+    点击菜单链接的时候，把对应的链接地址保存到sessionStorage中
+    页面刷新创建的时候，把值取出来赋值给左侧菜单栏
+    点击二级菜单的时候要重新给activepath赋值一下
+  10.绘制用户列表组件的基础布局结构
+    头部为一个面包屑导航区域，element中找到组件进行复制
+    plugins的element.js中导入相应的组件
+    绘制卡片区域，element中找简单卡片，复制代码
+    对卡片视图在plugins的element.js中做按需导入
+    在src/assets/css中的global.css中对面包屑导航栏进行设置
+    修改卡片阴影的样式
+    绘制卡片中的搜索区域和添加按钮区域
+    组件input输入框复制带搜索的输入框粘贴到卡片样式中
+    找到element中的layout进行布局
+    在plugins的element.js中做按需导入
+  11.获取用户列表数据
+    users.vue的script部分
+  12.渲染用户列表的数据（使用el-table组件）
+  <template>
+    <el-table
+      :data="tableData"   //为当前表格传递数据源
+      style="width: 100%">
+      <el-table-column
+        prop="date"    //指定所需要渲染的对象
+        label="日期"    //指定列标题
+        width="180">    //指定列宽
+      </el-table-column>
+      <el-table-column
+        prop="name"
+        label="姓名"
+        width="180">
+      </el-table-column>
+      <el-table-column
+        prop="address"
+        label="地址">
+      </el-table-column>
+    </el-table>
+  </template>
+    引入element组件到相应的位置
+    在plugins的element中按需导入组件
+    设置表格边框
+    设置表格与导航栏的间距，global.css 中进行设置
+  为表格添加索引列
+    <el-table-column type="index" label="#"></el-table-column>
+  自定义状态列的显示效果（用到**作用域与卡槽**）
+    通过卡槽拿到status的状态，通过element渲染成开关（switch开关）
+    赋值状态，element按需导入
+  通过作用域插槽渲染操作列
+    先去element组件中找模板，然后复制代码引入，修改相应的样式
+    设置鼠标移入的提示文字（tooltips）
+  13.实现分页效果
+    element->pagination分页，复制完整功能的代码，导入文档
+    在element.js中导入组件
+    设置分页的样式(Users.vue) 定义相应的事件
+    设置分页与表格的间距(global.css)
+  14.修改用户状态
+    把用户状态更改的数据同步保存到后台数据库
+      监听switch状态的改变，拿到最新状态（switch中的change事件）
+      调用api接口，把最新的状态保存的数据库中
+    users.vue中定义change点击事件，并进行定义
+    修改用户状态(查看相应的api文档),并实现相应的操作
+  15.实现搜索功能
+    element组件中找相应搜索框，引入文中
+    clearable这一属性可以清空搜索框输入的内容
+    使数据也被重置-> 用到input的clear事件
+    给搜索框添加一个点击事件
+  16.添加用户的对话框
+    dialog对话框，先进行按需导入和全局注册
+    然后给按钮添加点击事件
+  17.渲染添加用户的表单
+    element form表单 --> 表单验证前4行(el-form,el-form-item)
+    :rules 规则对象 ref引入对象
+    label指定文本，prop指定具体的校验规则，v-model做数据的双向绑定
+  18.自定义邮箱和手机号的校验规则
+    element --> 自定义校验规则
+      定义一个箭头函数代表一个校验规则
+      具体的规则中通过validate来使用定义的校验规则
+  19.实现添加表单的重置操作
+    给对话框绑定一个close事件addDialogClosed,
+    定义这个close事件，ref拿到表单的引用，调用表单的resetFields
+  20.实现添加用户前的表单预校验
+    为确定按钮绑定一个点击事件
+  21.调用api接口完成添加用户的操作
+    给确定添加用户的按钮设置一个点击函数
+    methods中定义这个点击函数，进行相应的操作，并添加完成后刷新用户列表
+  22.根据ID查询对应用户的信息（**）
+  23.渲染修改用户的表单
+    element中找input组件，复制前4然后粘贴到修改用户对话框(添加用户对话框下面）的区域
+    修改相应的参数
+    修改完成之后，创建相应的校验规则（editFormRules）
+  24.实现修改用户表单的重置操作
+    给修改对话框添加一个close事件
+  25.完成提交修改之前表单的预验证
+    methods中定义方法
+  26.实现提交表单完成用户信息的修改
+    api 文档，发起put请求
+  27.实现删除用户的操作
+    点击删除的时候，出来一个确认删除的弹框，利用element的MessageBox组件
+    在element.js 添加相应的组件，并挂载到vue上
+    找到删除按钮，为其绑定一个click事件removeUserById
+  完成用户部分的基本功能：上传码云进行同步
+    "git branch"    查看分支
+    "git checkout -b user"    新建一个use分支并切换到该分支
+    "git branch"    查看分支状态
+    "git status"    检查user分支上面的文件状态
+    "git add ."    上传所有文件
+    "git status"    再次查看状态
+    "git commit -m '完成用户列表功能模块'"
+    "git status"    再次检查目录状态
+    "git push -u origin user"   第一次把本地分支推送到云端origin库中，并用user来保存
+    "git branch"    检查当前所属分支
+    "git checkout master"    切换到master主分支
+    "git merge user"    从主分支上把user分支合并过来
+    "git push"    把本地代码推送到云端进行保存
+  因为接下来要学用户权限，创建一个rights分支
+    "git branch"    查看分支状态
+    "git checkout -b rights"    新建一个rights分支，并切换到这一分支上
+    "git branch"    再次查看状态
+    "git push -u origin rights"   把rights这个分支推送到云端
+
+五、权限列表模块
+  1.通过路由展示权限列表组件
+    components中建一个power文件夹，power中建一个Rights.vue，填写相应的信息
+    在router的index中导入Rights.vue这一页面
+  2.绘制权限列表的面包屑导航和卡片视图
+    将user.vue中的复制过来即可
+  3.调用api获取权限列表的数据
+  4.渲染权限列表ui结构
+    完善卡片视图
+    权限等级用element中的tag标签搞定
+    在element.js中做按需导入tag
+    通过vue循环为权限等级设不同的tag标签
+  5.认识用户-角色-权限三者之间的关系
+
+六、角色列表模块
+  1.通过路由展示角色列表组件
+    power文件夹中新建Roles.vue文件
+    在router的index中导入Roles.vue这一页面
+  2.绘制角色列表的基本布局并获取列表的相关数据
+    粘贴以前的面包屑导航栏，并修改相应的数据
+    card区域获取列表数据
+    渲染角色列表的数据
+    角色列表加expand扩展列
+  3.角色列表要完成的功能模块
+  渲染三级权限
+    首先是expand功能，通过渲染列表获得一级权限，加tag标签组件，加边框线样式，加箭头element组件（icon图标）
+    渲染二级权限(通过slot插槽)
+    防止页面缩放时箭头变动，全局加min-width样式
+    让按钮居中：选中行-》flex-》align-items：center(在控制台选中行，直接改)**
+    Roles定义纵向居中样式venter，并添加进去
+  为权限列表添加删除功能
+    element找tag标签，可移除标签 添加closeable属性
+    为标签添加close事件，标签关闭时触发，定义removeRightById这是触发函数
+  4.实现分配权限功能
+    为分配权限按钮添加一个点击事件showSetRightDialog，在methods中定义这个事件
+    找到element中的dialog对话框 复制
+    data()中进行定义visible的布尔数据
+    点击时在对应函数中设置setRightDialogVisible值为true
+    权限列表的展示需要将其渲染成一个树结构（tree）
+    然后判断数据是否获取成功，成功在data中定义一个权限数据列表
+    将所有的权限以树形的方式加载到对话框中，利用element的tree树形控件
+    按需导入tree组件
+    修改树形控件中的:data和:props属性
+    在每一个权限前面添加一个复选框CheckBox,并为每一个选定的复选框绑定一个id值
+    默认展开所有节点：default-expand-all
+    通过递归的形式获取所有的三级节点
+    解决选择其他用户checked不能被清除的问题，用setRightDialogClosed监听关闭
+    点击勾选按钮的时候把数据存储在数据库中（获取全选和半选的ID）
+    为确定按钮绑定相应的点击函数allotRights,并在methods中定义这个函数
+    点击确定时获取所有的全选getCheckedKeys和半选getHalfCheckedKeys的id值，将他们合并成一个完整的数组
+  5.完成用户列表的分配角色功能
+    插入一个dialog组件
+    data中定义visible布尔值属性
+    为分配角色的按钮绑定一个setRole点击事件
+    在methods定义这个点击事件setRole
+    点击按钮的时候，将scope.row中的信息传递过来setRole(scope.row)
+    data中定义一个userInfo存储用户的信息
+    然后在分配角色对话框中展示信息
+    展示对话框之前，获取所有角色的列表
+    获取成功，存储在rolesList中，并在data中定义
+    将获取到的角色列表渲染成一个下拉菜单(element中的select选择器)
+    按需导入select和option
+    完成分配角色改变时的替换功能（完成HTTP请求之后，1要校验status状态码是否正确，2错误输出错误信息，正确输出弹窗消息，3更新用户列表到最新的数据，4隐藏dialog操作框
+    绑定一个setRoleDialogClosed close事件，并在methods中定义,使得再次点击分配角色对话框时，变为原来的初始状态
+    至此，所有权限管理模块基本实现
+  上提到码云同步代码
+    "git branch"    查看分支
+    "git add ."    把所有文件上传
+    "git commit -m '完成权限功能模块'"    提交到缓存库
+    "git push"    将本地的分支提交到云端
+    "git checkout master"    切换到master主分支
+    "git merge rights"    将rights分支合并到主分支
+    "git branch"    查看分支状态
+    "git push"    将本地最新master分支推送到云端
+
+七、分类管理模块
+  1.商品分类的实现
+  新建一个商品分类的分支
+    "git branch"    查看分支状态
+    "git checkout -b goods_cate"    新建一个商品分类分支并切换到该分支上
+    "git branch"    查看分支状态
+    "git push -u origin goods_cate"   从本地上传到云端
+  新建一个goods组件
+    components中建立goods文件夹，建立一个Cate.vue商品分类组件(初始化结构：结构，行为，样式)
+    在router的index中导入Cate
+  绘制商品分类列表的面包屑导航和卡片视图
+    面包屑导航赋值粘贴
+    卡片视图中商品列表的渲染（获取数据列表**）
+    将商品名称一列渲染成一个树形的列表
+    gui面板-->依赖-->安装运行依赖vue-table-with-tree-grid
+    导入：main.js中导入树形插件,生成组件
+    插入Cate中，并做相应的设置(自定义模板列**)-->渲染自定义模板列
+  渲染排序(vue 中按需渲染用v-for循环**)
+  渲染操作列(element 按钮 type。。 size-mini)
+  实现底部的分页区域 完整分页组件-》methods中定义相应的方法监听值
+    在设计底部样式的时候报错没有less or less loader(***)
+  实现添加分类功能
+    复制粘贴一个dialog对话框,data中赋值addCateDialogVisible为false
+    button中绑定点击事件，methods中定义这一事件,使得addCateDialogVisible布尔值为true
+    找element中验证规则的表单-》改造
+  **关于父级分类的实现**
+    获取父级分类列表的数据
+    学会使用级联选择器（选hover样式）element.js 中按需导入Cascader
+      v-model 必须绑定数据，不能是具体的值或者对象
+    实现添加分类取消后dialog再次点开初始为原来状态--> 添加分类对话框添加一个close事件
+      在methods定义这个点击事件addCateDialogClosed --> "this.$refs.addCateFormRef.resetFields()"
+      要将下一栏级联选择器中涉及到的内容也清空(数据为空、level值、pid值都为0)
+    实现具体的添加分类操作
+      addCate具体实现
+    ？？？自己实现编辑与删除
+        实现编辑用户角色功能
+        实现删除用户角色功能
+        实现添加用户角色功能
+        (理解)实现商品分类的添加（已实现）
+        实现商品分类修改功能
+        实现商品分类删除功能
+  完成分类功能，上传到云端同步(都在vue_shop这一路径环境下)
+    "git branch"    查看分支
+    "git status"    查看当前状态
+    "git add ."    将所有文件提交
+    "git status"    再次查看状态
+    "git commit -m '完成分类功能模块'"    推送到缓存仓库
+    "git status"    再次查看状态
+    "git push"    将本地的分支提交到云端 
+    "git branch"    查看分支状态
+    分支合并
+    "git checkout master"
+    "git merge goods_cate"
+    "git push"    将本地最新master分支推送到云端
+  2.参数管理功能的实现
+    先建一个分支
+      "git branch"  查看分支状态
+      "git checkout -b goods_params"  新建一个goods_params分支，并切换到这一分支上
+      "git branch"   查看分支状态
+      "git push -u origin goods_params"   从本地上传到云端
+    动态参数（可选）、静态属性（固定）
+  创建面包屑导航栏和卡片区域(复制粘贴)
+    警告，element 中的 alert
+    element.js 中 引入alert组件
+    插入商品分类的级联选择器（**）
+    获取商品分类数据列表
+      return 中 定义cateList商品分类列表
+      created 中 this.getCateList()
+      methods 中 获取商品分类列表的数据并后台输出
+          async getCateList() {
+          const { data: res } = await this.$http.get('categories')
+          if (res.meta.status !== 200) {
+            return this.$message.error('获取商品分类列表失败！')
+          }
+          this.cateList = res.data
+          console.log(this.cateList)
+        }
+    渲染商品分类的级联选择框
+      去element中找cascader的hover模板
+      <el-cascader
+            expand-trigger="hover"
+            :options="cateList"
+            :props="cateProps"
+            v-model="selectedCateKeys"
+            @change="handleChange"
+          ></el-cascader>
+      data中定义cateProps对象、selectedCateKeys数组
+      methods定义handleChange函数
+    渲染动态参数和静态属性的tab标签
+      element中的Tabs标签页 引入element并挂载到vue
+      data中定义activeName,methods中定义handleTabClick
+    渲染添加参数按钮并控制禁用和启用状态
+      添加两个按钮到特定区域
+      没选中三级参数设为禁用状态；选中三级参数设为可用
+        定义一个计算属性computed，根据其返回的布尔值来确定禁用还是启用,把返回的值绑定到按钮的disabled属性
+    获取参数的数据
+      computed中定义当前选中的三级分类ID,并获取
+      通过many和only来区分动态还是静态，修改pane的name属性
+      在methods的handleChange中发起获取参数数据的请求,根据所选分类的ID，和当前所处的面板，获取对应的参数
+      面板发生改变数据并没有改变，把获取数据的函数单独抽离出来，分别在handleChange、handleTabClick调用
+      判断获取到的数据列表是动态参数还是静态属性，并在data中定义相应的数组结构
+    渲染动态参数和静态属性的参数列表
+      在pane中按钮下面添加参数表格(***，索引列，纯数据列，图标列的渲染)
+    完成添加参数和添加属功能
+      找到基本dialog对话框，复制粘贴
+      将添加动态参数和添加静态属性合并为一个对话框
+      computed中定义一个titleText属性动态计算标题的文本,在dialog中引入动态选择
+      data中定义visible布尔值
+      添加参数按钮中绑定一个click事件，然visible的值设为true
+      检查可以了
+      复制带有验证规则的form表单
+      data中定义addform,addFormRules
+      关闭添加对话框的时候，监听对话框的close事件，使得再次打开的时候恢复初始状态
+      methods中添加对话框的关闭事件
+      完成参数的添加操作
+        确定按钮绑定一个add的click事件
+        methods新增一个addParams的函数
+      实现参数修改的功能
+        在静动态表格的编辑按钮绑定同一个edit事件，在methods定义这个函数
+        添加对话框复制为修改 到相应位置
+            add ctrl+d 选中所有add-->edit
+        data 中定义visible\form\FormRules
+        methods中定义showedit\editclose\editparams
+        根据id查询参数，在编辑button中添加scope参数(id),并在showedit中使用发起请求
+        点击确定按钮完成修改
+      实现参数删除功能
+      渲染expand行的tag标签
+        通过foreach循环变为数组，然后在扩展行for循环为tag标签(for循环必须要加keys)
+        解决tag同步问题，为每一个tag设置input和布尔值
+  至此，分类参数的功能基本完成，提交到码云保存
+  
+  3.商品列表功能的实现
+    创建一个list组件，挂载在vue上
+    获取商品列表的数据（data,created,methods)【获取商品列表的时候，注意对创建的时间的获取】
+    进行商品列表的页面布局
+      面包屑导航栏 + 卡片视图区域（搜索框 + 添加商品按钮 + 商品列表 + 底部分页区域）
+  添加/编辑/商品信息成功和失败同时弹出
+
+  **在商品内容中渲染一个可以编辑的文本框****
+    gui面板 --> 依赖，安装依赖 --> 运行依赖(vue-quill-editor)
+    ??? 添加商品栏成功！
+  商品列表完成,上传到git同步资源
+
+  创建一个orders分支
+  
+  订单管理
+
+  数据报表需在运行依赖中安装echarts插件(参考详情学习echarts)
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+  
+
+
+
+
+
+        
+
